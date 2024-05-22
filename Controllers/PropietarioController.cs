@@ -238,7 +238,7 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 				else
 				{
 					
-					return Ok(new JwtSecurityTokenHandler().WriteToken( jwt.GenerarToken(p.Id)));
+					return Ok(new JwtSecurityTokenHandler().WriteToken( jwt.GenerarToken(p.Id,180)));
 				}
 			}
 			catch (Exception ex)
@@ -258,14 +258,20 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 				var entidad = await contexto.Propietarios.FirstOrDefaultAsync(x => x.Email == email);
 				if(entidad==null)
 				   return BadRequest("El email ingresado no existe.");
-				//para hacer: si el propietario existe, mandarle un email con un enlace para resetearlo con el token
-				//ese enlace ya permite cambiar la clave, este enlace va a estar auth ==> le envío el token 
-				//en un enlace no se puede enviar el token en el header ==> lo pongo en la queryparams
-				//ese enlace servirá para resetear la contraseña
-				//como es el email, fuera de la app , tego q ennviar un enlace q vaya al servidor . nno puedo harcodear el localhost...
-				//Dominio sirve para armar el enlace, en local será la ip y en producción será el dominio www...
-				var dominio = environment.IsDevelopment() ? HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() : "www.misitio.com";
-				return entidad != null ? Ok(entidad) : NotFound(); // no tengo q devolver al usuario, tengo q armar el email,ie el cuerpo del correo, generar el token como si estuviese loggueado, ponerle una duración(15 minutos) q si esa persona no usa el email , tiene q volver a generar el proceso
+
+				 
+				 
+
+				   
+				
+				//var dominio = environment.IsDevelopment() ? HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() : "www.misitio.com";
+				 var dominio = environment.IsDevelopment() ? config["AppSettings:DevelopmentDomain"] : config["AppSettings:ProductionDomain"];
+
+				string token=new JwtSecurityTokenHandler().WriteToken( jwt.GenerarToken(entidad.Id,5));
+                string enlace=dominio+$"Propietario/token?access_token={token}";
+				Console.WriteLine("enlace   tokem: "+enlace);
+				await Mensaje.EnviarEnlace(entidad,"Restablecer contraseña. ",config,enlace);
+				return Ok(entidad); 
 			}
 			catch (Exception ex)
 			{
@@ -287,37 +293,16 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 			     int userId =int.Parse(User.Identity.Name);
 			    Propietario propietario=await contexto.Propietarios.AsNoTracking().FirstOrDefaultAsync(p=> p.Id ==userId);
 
-				var perfil = new
-				{
-					Email = propietario.Email,
-					Nombre = propietario.Nombre
-				};
-				Random rand = new Random(Environment.TickCount);
+				
+				/* Random rand = new Random(Environment.TickCount);
 				string randomChars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789";
 				string nuevaClave = "";
 				for (int i = 0; i < 8; i++)
 				{
 					nuevaClave += randomChars[rand.Next(0, randomChars.Length)];
 				}//!Falta hacer el hash a la clave y actualizar el usuario con dicha clave
-				var message = new MimeKit.MimeMessage();
-				message.To.Add(new MailboxAddress(perfil.Nombre, "mar9ina@gmail.com"));
-				message.From.Add(new MailboxAddress("Sistema", config["Email:SMTPUser"]));
-				message.Subject = "Prueba de Correo desde API";
-				message.Body = new TextPart("html")
-				{
-					Text = @$"<h1>Hola</h1>
-					<p>¡Bienvenido, {perfil.Nombre}!</p>",//falta enviar la clave generada (sin hashear)
-				};
-				MailKit.Net.Smtp.SmtpClient client = new SmtpClient();
-				client.ServerCertificateValidationCallback = (object sender,
-					System.Security.Cryptography.X509Certificates.X509Certificate certificate,
-					System.Security.Cryptography.X509Certificates.X509Chain chain,
-					System.Net.Security.SslPolicyErrors sslPolicyErrors) =>
-				{ return true; };
-				client.Connect("smtp.gmail.com", 465, MailKit.Security.SecureSocketOptions.Auto);
-				client.Authenticate(config["Email:SMTPUser"], config["Email:SMTPPass"]);//estas credenciales deben estar en el user secrets
-				await client.SendAsync(message);
-				return Ok(perfil);
+				Mensaje.EnviarEnlace(propietario,"dd",config); */
+				return Ok(propietario);
 			}
 			catch (Exception ex)
 			{

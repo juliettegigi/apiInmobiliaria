@@ -20,7 +20,7 @@ public class JWT
  }
 
 
-public JwtSecurityToken  GenerarToken(int id){
+public JwtSecurityToken  GenerarToken(int id, int minutos){
    var key = new SymmetricSecurityKey(System.Text.Encoding.ASCII.GetBytes(secretKey));
    var credenciales = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
    var claims = new List<Claim>{
@@ -32,7 +32,7 @@ public JwtSecurityToken  GenerarToken(int id){
    	    issuer: this.issuer,
    	    audience: audience,
    	    claims: claims,
-   	    expires: DateTime.Now.AddMinutes(180),
+   	    expires: DateTime.Now.AddMinutes(minutos),
    	    signingCredentials: credenciales
    );
 
