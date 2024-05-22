@@ -24,15 +24,14 @@ public class Inmueble
     public bool Disponible { get; set; }
 
     [ForeignKey("PropietarioId")]
-	//[JsonIgnore]
+
     public Propietario? Propietario { get; set; }
 
     [ForeignKey("InmuebleTipoId")]
-   //[JsonIgnore]
-    public InmuebleTipo? InmuebleTipo { get; set; }
+   
+    public InmuebleTipo? InmuebleTipo { get; set; }    
+public ICollection<ImagenInmueble>? Imagenes { get; set; }
 
-   //  [JsonIgnore]
-    public ICollection<ImagenInmueble>? Imagenes { get; set; }
 }
 
 

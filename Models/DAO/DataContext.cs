@@ -33,7 +33,7 @@ public class DataContext : DbContext
     public DbSet<Propietario> Propietarios { get; set; }
     public DbSet<InmuebleTipo> InmuebleTipos { get; set; }
     public DbSet<Inmueble> Inmuebles { get; set; }
-    public DbSet<ImagenInmueble> ImagenesInmuebles { get; set; }
+    public DbSet<ImagenInmueble> ImagenInmuebles { get; set; }
 
      protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

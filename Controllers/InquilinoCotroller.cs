@@ -16,12 +16,6 @@ public class IquilinoController : ControllerBase
         _logger = logger;
     }
 
-   /*  [HttpGet]
-    [Route("get",Name="getW")]
-    public IEnumerable<Inquilino> Get()
-    {
-        
-    } */
 
     
 }

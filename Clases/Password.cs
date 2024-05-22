@@ -28,7 +28,7 @@ public class Password
 
     public bool EsIgual(string passIngresada, string passDB)
     {
-        Console.WriteLine("---------------------------------------------------------aloja");
+        
         return HashPassword(passIngresada) == passDB;
     }
 }

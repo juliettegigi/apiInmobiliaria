@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.ComponentModel.DataAnnotations;
+using MailKit.Net.Smtp;
+using MimeKit;
 
 using Models;
 using Models.DAO;
@@ -44,6 +46,60 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 
 
 
+
+/* ------------------------------------------------------------------------------------------------------------------------------- inmuebles del usuario logueado */
+
+[HttpGet("misInmuebles")]
+    public async Task<IActionResult> GetMisInmuebles()
+    {
+        try
+        {
+            int userId =int.Parse(User.Identity.Name);
+			List<Inmueble> inmuebles = await contexto.Propietarios
+            .Where(p => p.Id == userId)
+            .Include(p => p.Inmuebles)
+                .ThenInclude(i => i.InmuebleTipo)
+            .Include(p => p.Inmuebles)
+                .ThenInclude(i => i.Imagenes)
+            .SelectMany(p => p.Inmuebles)
+            .Select(i => new Inmueble
+            {
+                Id = i.Id,
+                PropietarioId = i.PropietarioId,
+                InmuebleTipoId = i.InmuebleTipoId,
+                Direccion = i.Direccion,
+                CantidadAmbientes = i.CantidadAmbientes,
+                Uso = i.Uso,
+                PrecioBase = i.PrecioBase,
+                CLatitud = i.CLatitud,
+                CLongitud = i.CLongitud,
+                Suspendido = i.Suspendido,
+                Disponible = i.Disponible,
+                InmuebleTipo = i.InmuebleTipo == null ? null : new InmuebleTipo
+                {
+                    Id = i.InmuebleTipo.Id,
+                    Tipo = i.InmuebleTipo.Tipo
+                },
+                Imagenes = i.Imagenes == null ? null : i.Imagenes.Select(img => new ImagenInmueble
+                {
+                    Id = img.Id,
+                    Imagen = img.Imagen
+                }).ToList()
+            })
+            .ToListAsync();
+
+        return Ok(inmuebles);
+        }
+        catch (Exception ex)
+        {
+           
+            return StatusCode(500, $"Error al obtener el inmueble: {ex.Message}");
+        }
+    }
+
+
+
+
 /* --------------------------------------------------------------------------------------------------------------------------------- get Propietario, el q tiene el token */
 
 	[HttpGet]
@@ -51,7 +107,10 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 		{
 			try
 			{   int userId =int.Parse(User.Identity.Name);
-				return await contexto.Propietarios.FindAsync(userId);
+			    Propietario p=await contexto.Propietarios.FindAsync(userId);
+				p.Pass=null;
+				return Ok(p);
+
 				//return await contexto.Propietarios.SingleOrDefaultAsync(x => x.Id == userId);
 			}
 			catch (Exception ex)
@@ -71,9 +130,10 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 		{
 			try
 			{
-				var entidad = await contexto.Propietarios.FindAsync(id);	
+				Propietario entidad = await contexto.Propietarios.FindAsync(id);	
 				entidad.NoPass();
-				return entidad != null ? Ok(new JsonResult(entidad)) : NotFound();
+				return Ok(entidad);
+				//return entidad != null ? Ok(new JsonResult(entidad)) : NotFound();
 			}
 			catch (Exception ex)
 			{
@@ -187,69 +247,85 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 			}
 		}
 
+/*---------------------------------------------------------------------------------------------------------        enviar el enlace al correo    */
+
+[HttpPost("email")]
+		[AllowAnonymous]
+		public async Task<IActionResult> GetByEmail([FromForm] string email)
+		{
+			try
+			{ //método sin autenticar, busca el propietario x email
+				var entidad = await contexto.Propietarios.FirstOrDefaultAsync(x => x.Email == email);
+				if(entidad==null)
+				   return BadRequest("El email ingresado no existe.");
+				//para hacer: si el propietario existe, mandarle un email con un enlace para resetearlo con el token
+				//ese enlace ya permite cambiar la clave, este enlace va a estar auth ==> le envío el token 
+				//en un enlace no se puede enviar el token en el header ==> lo pongo en la queryparams
+				//ese enlace servirá para resetear la contraseña
+				//como es el email, fuera de la app , tego q ennviar un enlace q vaya al servidor . nno puedo harcodear el localhost...
+				//Dominio sirve para armar el enlace, en local será la ip y en producción será el dominio www...
+				var dominio = environment.IsDevelopment() ? HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() : "www.misitio.com";
+				return entidad != null ? Ok(entidad) : NotFound(); // no tengo q devolver al usuario, tengo q armar el email,ie el cuerpo del correo, generar el token como si estuviese loggueado, ponerle una duración(15 minutos) q si esa persona no usa el email , tiene q volver a generar el proceso
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(ex.Message);
+			}
+		}
+
+
+
+
+/*--------------------------------------------------------------------------------------------------------------------------  enviar contraseña*/		
+	[HttpGet("token")]
+		public async Task<IActionResult> Token()
+		{
+			
+			try
+			{ //este método si tiene autenticación, al entrar, generar clave aleatorio y enviarla por correo
+
+			     int userId =int.Parse(User.Identity.Name);
+			    Propietario propietario=await contexto.Propietarios.AsNoTracking().FirstOrDefaultAsync(p=> p.Id ==userId);
+
+				var perfil = new
+				{
+					Email = propietario.Email,
+					Nombre = propietario.Nombre
+				};
+				Random rand = new Random(Environment.TickCount);
+				string randomChars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789";
+				string nuevaClave = "";
+				for (int i = 0; i < 8; i++)
+				{
+					nuevaClave += randomChars[rand.Next(0, randomChars.Length)];
+				}//!Falta hacer el hash a la clave y actualizar el usuario con dicha clave
+				var message = new MimeKit.MimeMessage();
+				message.To.Add(new MailboxAddress(perfil.Nombre, "mar9ina@gmail.com"));
+				message.From.Add(new MailboxAddress("Sistema", config["Email:SMTPUser"]));
+				message.Subject = "Prueba de Correo desde API";
+				message.Body = new TextPart("html")
+				{
+					Text = @$"<h1>Hola</h1>
+					<p>¡Bienvenido, {perfil.Nombre}!</p>",//falta enviar la clave generada (sin hashear)
+				};
+				MailKit.Net.Smtp.SmtpClient client = new SmtpClient();
+				client.ServerCertificateValidationCallback = (object sender,
+					System.Security.Cryptography.X509Certificates.X509Certificate certificate,
+					System.Security.Cryptography.X509Certificates.X509Chain chain,
+					System.Net.Security.SslPolicyErrors sslPolicyErrors) =>
+				{ return true; };
+				client.Connect("smtp.gmail.com", 465, MailKit.Security.SecureSocketOptions.Auto);
+				client.Authenticate(config["Email:SMTPUser"], config["Email:SMTPPass"]);//estas credenciales deben estar en el user secrets
+				await client.SendAsync(message);
+				return Ok(perfil);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(ex.Message);
+			}
+		}
 
 
 
 }
 
-
-
-/*  const {nombre,correo,password,rol}=req.body;// nos van a pasar al usuario
-  const usuario= new Usuario({nombre,correo,password,rol});
-  console.log(usuario);
-  const salt=bcryptjs.genSaltSync();
-  usuario.password=bcryptjs.hashSync(password,salt);
-  await usuario.save();
- 
-  res.json({msg:'post API-controlador',
-            usuario});*/
-
-/* 
-			public class ApiClient {
-    private static final String URL = "http://192.168.1.2:5000/";
-    private static MisEndPoints mep;
-
-    public static MisEndPoints getEndPoints(){
-        Gson gson = new GsonBuilder().setLenient().create();
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(URL)
-                .addConverterFactory(GsonConverterFactory.create(gson))
-                .build();
-        mep = retrofit.create(MisEndPoints.class);
-        return mep;
-    }
-
-    public interface MisEndPoints {
-        @FormUrlEncoded
-        @POST("Propietarios/login")
-        Call<String> login(@Field("Usuario") String u, @Field("Clave") String c);
-    }
-}
-
-
-
-public class LoginActivityViewModel extends AndroidViewModel {
-    public LoginActivityViewModel(@NonNull Application application) {
-        super(application);
-    }
-
-    public void logueo(String usuario, String clave){
-        ApiClient.MisEndPoints api = ApiClient.getEndPoints();
-        Call<String> call = api.login(usuario, clave);
-        call.enqueue(new Callback<String>() {
-            @Override
-            public void onResponse(Call<String> call, Response<String> response) {
-                if(response.isSuccessful()){
-                    Log.d("salida", response.body());
-                } else {
-                    Log.d("salida", "Incorrecto");
-                }
-            }
-
-            @Override
-            public void onFailure(Call<String> call, Throwable throwable) {
-                Log.d("salida", "Falla");
-            }
-        });
-    }
-} */

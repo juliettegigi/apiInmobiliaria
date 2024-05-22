@@ -11,6 +11,8 @@ public class ImagenInmueble
     [Key]
     public int Id { get; set; }
     public int InmuebleId { get; set; }
+    [NotMapped]
+    public IFormFile ImagenFile { get; set; }
     public string Imagen { get; set; }
 
     [ForeignKey("InmuebleId")]
