@@ -254,12 +254,10 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 		public async Task<IActionResult> GetByEmail([FromForm] string email)
 		{
 			try
-			{ //método sin autenticar, busca el propietario x email
+			{ 
 				var entidad = await contexto.Propietarios.FirstOrDefaultAsync(x => x.Email == email);
 				if(entidad==null)
-				   return BadRequest("El email ingresado no existe.");
-
-				 
+				   return BadRequest("El email ingresado no existe."); 
 				 
 
 				   
@@ -270,8 +268,12 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 				string token=new JwtSecurityTokenHandler().WriteToken( jwt.GenerarToken(entidad.Id,5));
                 string enlace=dominio+$"Propietario/token?access_token={token}";
 				Console.WriteLine("enlace   tokem: "+enlace);
-				await Mensaje.EnviarEnlace(entidad,"Restablecer contraseña. ",config,enlace);
-				return Ok(entidad); 
+				if(await Mensaje.EnviarEnlace(entidad,"Restablecer contraseña. ",config,environment,jwt)){
+					Console.WriteLine("Adentro: "+enlace);
+					return Ok("Se ha enviado un enlace de restablecimiento de contraseña a su correo electrónico.");
+				}
+				Console.WriteLine("enlace ssssssssssssss  tokem: "+enlace);
+				return StatusCode(500, "Hubo un problema al enviar el correo de restablecimiento. Inténtelo nuevamente más tarde.");
 			}
 			catch (Exception ex)
 			{
@@ -291,18 +293,16 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 			{ //este método si tiene autenticación, al entrar, generar clave aleatorio y enviarla por correo
 
 			     int userId =int.Parse(User.Identity.Name);
-			    Propietario propietario=await contexto.Propietarios.AsNoTracking().FirstOrDefaultAsync(p=> p.Id ==userId);
+			    Propietario propietario=await contexto.Propietarios.FirstOrDefaultAsync(p=> p.Id ==userId);
 
 				
-				/* Random rand = new Random(Environment.TickCount);
-				string randomChars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789";
-				string nuevaClave = "";
-				for (int i = 0; i < 8; i++)
-				{
-					nuevaClave += randomChars[rand.Next(0, randomChars.Length)];
-				}//!Falta hacer el hash a la clave y actualizar el usuario con dicha clave
-				Mensaje.EnviarEnlace(propietario,"dd",config); */
-				return Ok(propietario);
+				string nuevaPass=await Mensaje.EnviarCodigo(propietario,"Codigo. ",config,password);
+				if(String.IsNullOrEmpty(nuevaPass)){
+                    return StatusCode(500, "Hubo un problema al enviar código.");
+				} 
+				propietario.Pass=nuevaPass;
+				await contexto.SaveChangesAsync();
+				return Ok("Contraseña actualizada exitosamente.");
 			}
 			catch (Exception ex)
 			{
