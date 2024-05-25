@@ -34,6 +34,9 @@ public class DataContext : DbContext
     public DbSet<InmuebleTipo> InmuebleTipos { get; set; }
     public DbSet<Inmueble> Inmuebles { get; set; }
     public DbSet<ImagenInmueble> ImagenInmuebles { get; set; }
+    public DbSet<Contrato> Contratos { get; set; }
+    public DbSet<Inquilino> Inquilinos { get; set; }
+    public DbSet<Pago> Pagos { get; set; }
 
      protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

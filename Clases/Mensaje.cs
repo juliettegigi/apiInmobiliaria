@@ -35,16 +35,21 @@ private static string GetMensajeCodigo(Propietario perfil,string codigo="")
     }
 
 
-public static async Task<bool>  EnviarEnlace(Propietario perfil,string subject, IConfiguration config,IWebHostEnvironment environment,JWT jwt){
+public static async Task<bool>  EnviarEnlace(Propietario perfil,string subject, IConfiguration config,IWebHostEnvironment environment,JWT jwt, string dominio){
 	
 	      try{
 
-			//var dominio = environment.IsDevelopment() ? HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() : "www.misitio.com";
-				 var dominio = environment.IsDevelopment() ? config["AppSettings:DevelopmentDomain"] : config["AppSettings:ProductionDomain"];
+			
+			//	 var dominio = environment.IsDevelopment() ? config["AppSettings:DevelopmentDomain"] : config["AppSettings:ProductionDomain"];
 
 				string token=new JwtSecurityTokenHandler().WriteToken( jwt.GenerarToken(perfil.Id,5));
-                string enlace=dominio+$"Propietario/token?access_token={token}";
+                //string enlace=dominio+$"Propietario/token?access_token={token}";
+				string enlace = $"{dominio}/resetearpass.html?access_token={token}";
 				Console.WriteLine("enlace   tokem: "+enlace);
+
+
+			
+				 
 
               var message = new MimeKit.MimeMessage();
 				message.To.Add(new MailboxAddress(perfil.Nombre, perfil.Email));

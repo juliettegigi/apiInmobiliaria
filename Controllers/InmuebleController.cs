@@ -119,13 +119,14 @@ public async Task<IActionResult> Post([FromForm] InmuebleViewModel model)
         await contexto.Inmuebles.AddAsync(entidad);
         await contexto.SaveChangesAsync();
 
-        return Ok(entidad);
+        return Ok(model);
     }
     catch (Exception ex)
     {
         return BadRequest(ex.Message);
     }
 }
+
 
 
 
@@ -193,6 +194,14 @@ public async Task<IActionResult> Post([FromForm] InmuebleViewModel model)
     {
         try
         {  int userId =int.Parse(User.Identity.Name);
+
+
+
+
+
+
+
+
             List<Inmueble> inmuebles = await contexto.Inmuebles
             .Where(i => i.PropietarioId == userId)
             .Include(p => p.InmuebleTipo)
@@ -232,6 +241,101 @@ public async Task<IActionResult> Post([FromForm] InmuebleViewModel model)
             return StatusCode(500, $"Error al obtener el inmueble: {ex.Message}");
         }
     }
+
+
+
+
+
+
+
+ 
+ /*----------------------------------------------------------------------------------------------------------------------- get inmuebles con contrato del propietario logueado*/
+   [HttpGet("inmconcontrato")]
+    public async Task<IActionResult> GetByContrato()
+    {
+
+        
+        try
+        {  int userId =int.Parse(User.Identity.Name);
+
+           var inmueblesQuery = await contexto.Inmuebles
+            .Where(inmueble => inmueble.PropietarioId == userId && inmueble.Contratos.Any(c => c.Estado))
+    .Include(inmueble => inmueble.Contratos)
+        .ThenInclude(contrato => contrato.Inquilino)
+    .Include(inmueble => inmueble.InmuebleTipo)
+    .Include(inmueble => inmueble.Imagenes)
+    .ToListAsync();
+
+var inmuebles = inmueblesQuery.Select(i => new Inmueble
+{
+    Id = i.Id,
+    PropietarioId = i.PropietarioId,
+    InmuebleTipoId = i.InmuebleTipoId,
+    Direccion = i.Direccion,
+    CantidadAmbientes = i.CantidadAmbientes,
+    Uso = i.Uso,
+    PrecioBase = i.PrecioBase,
+    CLatitud = i.CLatitud,
+    CLongitud = i.CLongitud,
+    Suspendido = i.Suspendido,
+    Disponible = i.Disponible,
+    InmuebleTipo = i.InmuebleTipo == null ? null : new InmuebleTipo
+    {
+        Id = i.InmuebleTipo.Id,
+        Tipo = i.InmuebleTipo.Tipo
+    },
+    Imagenes = i.Imagenes == null ? null : i.Imagenes.Select(img => new ImagenInmueble
+    {
+        Id = img.Id,
+        Imagen = img.Imagen
+    }).ToList(),
+    Contratos = i.Contratos == null ? null : i.Contratos.Select(c => new Contrato
+    {
+        Id = c.Id,
+        InquilinoId = c.InquilinoId,
+        InmuebleId = c.InmuebleId,
+       /*  FechaInicio = c.FechaInicio,
+        FechaFin = c.FechaFin,
+        FechaFinAnticipada = c.FechaFinAnticipada, */
+        PrecioXmes = c.PrecioXmes,
+        Estado = c.Estado,
+        Inquilino = c.Inquilino == null ? null : new Inquilino
+        {
+            Id = c.Inquilino.Id,
+            DNI = c.Inquilino.DNI,
+            Nombre = c.Inquilino.Nombre,
+            Apellido = c.Inquilino.Apellido,
+            Telefono = c.Inquilino.Telefono,
+            Email = c.Inquilino.Email,
+            Domicilio = c.Inquilino.Domicilio
+        }
+    }).ToList()
+}).ToList();
+
+        
+           Console.WriteLine("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz");
+           
+            return Ok(inmuebles);
+            }
+    
+        catch (Exception ex)
+        {
+            // En caso de error, devolver una respuesta 500 Internal Server Error con el mensaje de error
+            return StatusCode(500, $"Error al obtener el inmueble: {ex.Message}");
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

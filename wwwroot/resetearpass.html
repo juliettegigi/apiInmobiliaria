@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restablecimiento de Contraseña</title>
+</head>
+<body>
+    <h1>Restablecimiento de Contraseña</h1>
+    <p>Su solicitud de restablecimiento de contraseña ha sido recibida.</p>
+    <p>Por favor, haga clic en el botón de abajo para abrir la aplicación móvil y completar el proceso.</p>
+    <button onclick="openApp()">Abrir Aplicación</button>
+    <script>
+        function openApp() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('access_token');
+            if (token) {
+                window.location.href = `myapp://reset_password?access_token=${token}`;
+            } else {
+                alert('Token no encontrado');
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+    

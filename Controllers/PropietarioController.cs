@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
+using System.Net.Sockets;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -96,6 +98,9 @@ public class PropietarioController : ControllerBase  // acá los controladores h
             return StatusCode(500, $"Error al obtener el inmueble: {ex.Message}");
         }
     }
+
+
+
 
 
 
@@ -261,18 +266,14 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 				 
 
 				   
-				
 				//var dominio = environment.IsDevelopment() ? HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() : "www.misitio.com";
-				 var dominio = environment.IsDevelopment() ? config["AppSettings:DevelopmentDomain"] : config["AppSettings:ProductionDomain"];
+				//var dominio = environment.IsDevelopment() ? config["AppSettings:DevelopmentDomain"] : config["AppSettings:ProductionDomain"];
+				var dominio= GetLocalIpAddress();
 
-				string token=new JwtSecurityTokenHandler().WriteToken( jwt.GenerarToken(entidad.Id,5));
-                string enlace=dominio+$"Propietario/token?access_token={token}";
-				Console.WriteLine("enlace   tokem: "+enlace);
-				if(await Mensaje.EnviarEnlace(entidad,"Restablecer contraseña. ",config,environment,jwt)){
-					Console.WriteLine("Adentro: "+enlace);
+				if(await Mensaje.EnviarEnlace(entidad,"Restablecer contraseña. ",config,environment,jwt,dominio)){
+					
 					return Ok("Se ha enviado un enlace de restablecimiento de contraseña a su correo electrónico.");
 				}
-				Console.WriteLine("enlace ssssssssssssss  tokem: "+enlace);
 				return StatusCode(500, "Hubo un problema al enviar el correo de restablecimiento. Inténtelo nuevamente más tarde.");
 			}
 			catch (Exception ex)
@@ -310,7 +311,43 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 			}
 		}
 
+		[HttpPut("pass")]
+		public async Task<IActionResult> ActualizarPass([FromForm] string nuevaPass)
+		{
+			Console.WriteLine("Adentro: puttt");
+			try
+			{ //este método si tiene autenticación, al entrar, generar clave aleatorio y enviarla por correo
 
+			     int userId =int.Parse(User.Identity.Name);
+			    Propietario propietario=await contexto.Propietarios.FirstOrDefaultAsync(p=> p.Id ==userId);
+
+				
+				propietario.Pass=password.HashPassword(nuevaPass);
+				await contexto.SaveChangesAsync();
+				return Ok("Contraseña actualizada exitosamente.");
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(ex.Message);
+			}
+		}
+
+
+
+private string GetLocalIpAddress()
+        {
+            string localIp = null;
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    localIp = ip.ToString();
+                    break;
+                }
+            }
+            return localIp;
+        }
 
 }
 
