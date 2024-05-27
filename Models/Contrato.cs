@@ -14,17 +14,17 @@ public class Contrato
 
     public int InmuebleId { get; set; }
     [ForeignKey("InmuebleId")]
-    public Inmueble Inmueble { get; set; }
+    public Inmueble? Inmueble { get; set; }
 
     public int InquilinoId { get; set; }
     [ForeignKey("InquilinoId")]
-    public Inquilino Inquilino { get; set; }
+    public Inquilino? Inquilino { get; set; }
     public DateTime FechaInicio { get; set; }
     public DateTime FechaFin { get; set; }
     public DateTime FechaFinAnticipada { get; set; } 
     public decimal PrecioXmes { get; set; }
     public bool Estado { get; set; }
-    public ICollection<Pago> Pagos { get; set; }
+    public ICollection<Pago>? Pagos { get; set; }
         
         
 }

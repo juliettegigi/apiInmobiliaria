@@ -226,7 +226,9 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 		//[FromBody] Propietario entidad, [Required, FromBody] string pass
 
 		public async Task<IActionResult> Login([FromForm] LoginView loginView)// objeto con usuario y Pass
-		{   
+		{  
+
+			Console.WriteLine("enlace   tokem: etrooooooosssssssssssssssss?"); 
 			  if (!ModelState.IsValid){
             return BadRequest(ModelState);
         }
@@ -259,7 +261,7 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 		public async Task<IActionResult> GetByEmail([FromForm] string email)
 		{
 			try
-			{ 
+			{ Console.WriteLine("enlace   tokem: etrooooooo?");
 				var entidad = await contexto.Propietarios.FirstOrDefaultAsync(x => x.Email == email);
 				if(entidad==null)
 				   return BadRequest("El email ingresado no existe."); 
@@ -267,8 +269,8 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 
 				   
 				//var dominio = environment.IsDevelopment() ? HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() : "www.misitio.com";
-				//var dominio = environment.IsDevelopment() ? config["AppSettings:DevelopmentDomain"] : config["AppSettings:ProductionDomain"];
-				var dominio= GetLocalIpAddress();
+				var dominio = environment.IsDevelopment() ? config["AppSettings:DevelopmentDomain"] : config["AppSettings:ProductionDomain"];
+				//var dominio= GetLocalIpAddress();
 
 				if(await Mensaje.EnviarEnlace(entidad,"Restablecer contraseña. ",config,environment,jwt,dominio)){
 					
@@ -283,7 +285,12 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 		}
 
 
-
+ [HttpGet("resetearpass")]
+        public IActionResult ResetearPass([FromQuery] string access_token)
+        {
+            var redirectUrl = $"myapp://nueva_pass?access_token={access_token}";
+            return Redirect(redirectUrl);
+        }
 
 /*--------------------------------------------------------------------------------------------------------------------------  enviar contraseña*/		
 	[HttpGet("token")]

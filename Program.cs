@@ -40,7 +40,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 				var path = context.HttpContext.Request.Path;
 				if (!string.IsNullOrEmpty(accessToken) &&
 					(path.StartsWithSegments("/chatsegurohub") ||
-					path.StartsWithSegments("/api/propietarios/reset") ||
+					path.StartsWithSegments("/propietario/resetearpass") ||
 					path.StartsWithSegments("/Propietario/token")))
 				{//reemplazar las urls por las necesarias ruta ⬆
 					context.Token = accessToken;

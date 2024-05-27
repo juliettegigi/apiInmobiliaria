@@ -44,7 +44,8 @@ public static async Task<bool>  EnviarEnlace(Propietario perfil,string subject, 
 
 				string token=new JwtSecurityTokenHandler().WriteToken( jwt.GenerarToken(perfil.Id,5));
                 //string enlace=dominio+$"Propietario/token?access_token={token}";
-				string enlace = $"{dominio}/resetearpass.html?access_token={token}";
+				//string enlace = $"{dominio}/resetearpass.html?access_token={token}";
+				  string enlace = $"http://192.168.199.91:5000/Propietario/resetearpass?access_token={token}";
 				Console.WriteLine("enlace   tokem: "+enlace);
 
 
@@ -55,13 +56,13 @@ public static async Task<bool>  EnviarEnlace(Propietario perfil,string subject, 
 				message.To.Add(new MailboxAddress(perfil.Nombre, perfil.Email));
 				message.From.Add(new MailboxAddress("Inmobiliaria TP", config["Email:SMTPUser"]));
 				message.Subject = subject;
-				message.Body = new TextPart("html") // usar una vista
+				message.Body = new TextPart("html") 
 				{ Text=Mensaje.GetMensajeEnlace(perfil,enlace)
 					,//falta enviar la clave generada (sin hashear)
 				};
 				
 				MailKit.Net.Smtp.SmtpClient client = new SmtpClient();
-				client.ServerCertificateValidationCallback = (object sender,  //para q no valide el certificado
+				client.ServerCertificateValidationCallback = (object sender,  
 					System.Security.Cryptography.X509Certificates.X509Certificate certificate,
 					System.Security.Cryptography.X509Certificates.X509Chain chain,
 					System.Net.Security.SslPolicyErrors sslPolicyErrors) =>
@@ -76,6 +77,9 @@ public static async Task<bool>  EnviarEnlace(Propietario perfil,string subject, 
 					return false;
 				}
 }
+
+
+
 
 
 public static async Task<String>  EnviarCodigo(Propietario perfil,string subject, IConfiguration config,Password password){

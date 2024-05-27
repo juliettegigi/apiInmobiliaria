@@ -259,12 +259,14 @@ public async Task<IActionResult> Post([FromForm] InmuebleViewModel model)
         {  int userId =int.Parse(User.Identity.Name);
 
            var inmueblesQuery = await contexto.Inmuebles
-            .Where(inmueble => inmueble.PropietarioId == userId && inmueble.Contratos.Any(c => c.Estado))
-    .Include(inmueble => inmueble.Contratos)
-        .ThenInclude(contrato => contrato.Inquilino)
-    .Include(inmueble => inmueble.InmuebleTipo)
-    .Include(inmueble => inmueble.Imagenes)
-    .ToListAsync();
+                               .Where(inmueble => inmueble.PropietarioId == userId && inmueble.Contratos.Any(c => c.Estado))
+                               .Include(inmueble => inmueble.Contratos)
+                                   .ThenInclude(contrato => contrato.Inquilino)
+                               .Include(inmueble => inmueble.Contratos)
+                                   .ThenInclude(contrato => contrato.Pagos) 
+                               .Include(inmueble => inmueble.InmuebleTipo)
+                               .Include(inmueble => inmueble.Imagenes)
+                               .ToListAsync();
 
 var inmuebles = inmueblesQuery.Select(i => new Inmueble
 {
@@ -308,7 +310,16 @@ var inmuebles = inmueblesQuery.Select(i => new Inmueble
             Telefono = c.Inquilino.Telefono,
             Email = c.Inquilino.Email,
             Domicilio = c.Inquilino.Domicilio
-        }
+        },
+         Pagos = c.Pagos == null ? null : c.Pagos.Select(p => new Pago
+        {
+            Id = p.Id,
+            NumeroPago = p.NumeroPago,
+            ContratoId = p.ContratoId,
+            Fecha = p.Fecha,
+            FechaPago = p.FechaPago,
+            Importe = p.Importe
+        }).ToList()
     }).ToList()
 }).ToList();
 

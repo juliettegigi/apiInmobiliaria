@@ -15,7 +15,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('access_token');
             if (token) {
-                window.location.href = `myapp://reset_password?access_token=${token}`;
+                window.location.href = `myapp://nueva_pass?access_token=${token}`;
             } else {
                 alert('Token no encontrado');
             }

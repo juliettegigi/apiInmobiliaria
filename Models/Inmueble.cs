@@ -31,7 +31,7 @@ public class Inmueble
    
     public InmuebleTipo? InmuebleTipo { get; set; }    
 public ICollection<ImagenInmueble>? Imagenes { get; set; }
-public ICollection<Contrato> Contratos { get; set; }
+public ICollection<Contrato>? Contratos { get; set; }
 
 }
 
