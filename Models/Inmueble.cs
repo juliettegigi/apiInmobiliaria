@@ -16,7 +16,7 @@ public class Inmueble
     public string? Direccion { get; set; }
     public int CantidadAmbientes { get; set; }
    [Column(TypeName = "string")]
-    public TipoUso Uso { get; set; }
+    public TipoUso? Uso { get; set; }
     public decimal PrecioBase { get; set; }
     public decimal CLatitud { get; set; }
     public decimal CLongitud { get; set; }

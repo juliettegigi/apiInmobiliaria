@@ -47,7 +47,8 @@ public async Task<IActionResult> Post([FromForm] InmuebleViewModel model)
 {
     try
     {
-        
+        if (!ModelState.IsValid)
+				return BadRequest();
         int userId = int.Parse(User.Identity.Name);
         var propietario = await contexto.Propietarios.FindAsync(userId);
         var inmuebleTipo = await contexto.InmuebleTipos.FindAsync(model.InmuebleTipoId);
@@ -57,7 +58,8 @@ public async Task<IActionResult> Post([FromForm] InmuebleViewModel model)
             return BadRequest("Propietario o Tipo de Inmueble no válido.");
         }
 
-        // Crear la entidad Inmueble
+
+        
         var entidad = new Inmueble
         {
             PropietarioId = userId,
@@ -66,13 +68,13 @@ public async Task<IActionResult> Post([FromForm] InmuebleViewModel model)
             CantidadAmbientes = model.CantidadAmbientes,
             Uso = model.Uso,
             PrecioBase = model.PrecioBase,
-           // CLatitud = model.CLatitud,
-            //CLongitud = model.CLongitud,
-           // Suspendido = model.Suspendido,
-           // Disponible = model.Disponible,
+            CLatitud = model.CLatitud,
+            CLongitud = model.CLongitud,
+            Suspendido = model.Suspendido,
+            Disponible = model.Disponible,
             Propietario = propietario,
             InmuebleTipo = inmuebleTipo,
-            Imagenes = new List<ImagenInmueble>()
+            Imagenes = model.Imagenes==null?null:new List<ImagenInmueble>()
         };
 
        
@@ -114,6 +116,8 @@ public async Task<IActionResult> Post([FromForm] InmuebleViewModel model)
                    
                 }
             }
+
+        
 
         // Guardar el inmueble y las imágenes en la base de datos
         await contexto.Inmuebles.AddAsync(entidad);
@@ -324,7 +328,7 @@ var inmuebles = inmueblesQuery.Select(i => new Inmueble
 }).ToList();
 
         
-           Console.WriteLine("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz");
+       
            
             return Ok(inmuebles);
             }
@@ -341,7 +345,89 @@ var inmuebles = inmueblesQuery.Select(i => new Inmueble
 
 
 
+[HttpPut("{id}")]
+public async Task<IActionResult> cambiarSuspendido(int id){
 
+    int userId =int.Parse(User.Identity.Name);
+    var inmueble = await contexto.Inmuebles
+        .Where(i => i.Id == id && i.PropietarioId == userId)
+        .Include(inmueble => inmueble.Contratos)
+                                   .ThenInclude(contrato => contrato.Inquilino)
+                               .Include(inmueble => inmueble.Contratos)
+                                   .ThenInclude(contrato => contrato.Pagos) 
+                               .Include(inmueble => inmueble.InmuebleTipo)
+                               .Include(inmueble => inmueble.Imagenes)
+        .FirstOrDefaultAsync();
+
+         if (inmueble == null)
+    {
+        return BadRequest("Inmueble incorrecto");
+    }        
+   
+    
+    inmueble.Suspendido=!inmueble.Suspendido;
+    contexto.Entry(inmueble).Property(i => i.Suspendido).IsModified = true;
+    await contexto.SaveChangesAsync();
+
+    // Transforma el inmueble en el objeto deseado para devolverlo
+    var inmueble2 = new Inmueble
+    {
+        Id = inmueble.Id,
+        PropietarioId = inmueble.PropietarioId,
+        InmuebleTipoId = inmueble.InmuebleTipoId,
+        Direccion = inmueble.Direccion,
+        CantidadAmbientes = inmueble.CantidadAmbientes,
+        Uso = inmueble.Uso,
+        PrecioBase = inmueble.PrecioBase,
+        CLatitud = inmueble.CLatitud,
+        CLongitud = inmueble.CLongitud,
+        Suspendido = inmueble.Suspendido,
+        Disponible = inmueble.Disponible,
+        InmuebleTipo = inmueble.InmuebleTipo == null ? null : new InmuebleTipo
+        {
+            Id = inmueble.InmuebleTipo.Id,
+            Tipo = inmueble.InmuebleTipo.Tipo
+        },
+        Imagenes = inmueble.Imagenes == null ? null : inmueble.Imagenes.Select(img => new ImagenInmueble
+        {
+            Id = img.Id,
+            Imagen = img.Imagen
+        }).ToList(),
+        Contratos = inmueble.Contratos == null ? null : inmueble.Contratos.Select(c => new Contrato
+        {
+            Id = c.Id,
+            InquilinoId = c.InquilinoId,
+            InmuebleId = c.InmuebleId,
+            PrecioXmes = c.PrecioXmes,
+            Estado = c.Estado,
+            Inquilino = c.Inquilino == null ? null : new Inquilino
+            {
+                Id = c.Inquilino.Id,
+                DNI = c.Inquilino.DNI,
+                Nombre = c.Inquilino.Nombre,
+                Apellido = c.Inquilino.Apellido,
+                Telefono = c.Inquilino.Telefono,
+                Email = c.Inquilino.Email,
+                Domicilio = c.Inquilino.Domicilio
+            },
+            Pagos = c.Pagos == null ? null : c.Pagos.Select(p => new Pago
+            {
+                Id = p.Id,
+                NumeroPago = p.NumeroPago,
+                ContratoId = p.ContratoId,
+                Fecha = p.Fecha,
+                FechaPago = p.FechaPago,
+                Importe = p.Importe
+            }).ToList()
+        }).ToList()
+    };
+
+    
+    return Ok(inmueble2);
+
+
+
+}
 
 
 

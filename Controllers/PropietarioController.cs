@@ -187,7 +187,6 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 				
 			    if(!string.IsNullOrEmpty(entidad.Pass)){
 				   entidad.Pass=password.HashPassword(entidad.Pass);
-				   Console.WriteLine("pass ",entidad.Pass);
 			    }
 				else entidad.Pass=propietario.Pass;
 				if(string.IsNullOrEmpty(entidad.Nombre))entidad.Nombre=propietario.Nombre;
@@ -228,7 +227,6 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 		public async Task<IActionResult> Login([FromForm] LoginView loginView)// objeto con usuario y Pass
 		{  
 
-			Console.WriteLine("enlace   tokem: etrooooooosssssssssssssssss?"); 
 			  if (!ModelState.IsValid){
             return BadRequest(ModelState);
         }
@@ -261,7 +259,7 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 		public async Task<IActionResult> GetByEmail([FromForm] string email)
 		{
 			try
-			{ Console.WriteLine("enlace   tokem: etrooooooo?");
+			{ 
 				var entidad = await contexto.Propietarios.FirstOrDefaultAsync(x => x.Email == email);
 				if(entidad==null)
 				   return BadRequest("El email ingresado no existe."); 
@@ -269,17 +267,18 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 
 				   
 				//var dominio = environment.IsDevelopment() ? HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() : "www.misitio.com";
-				var dominio = environment.IsDevelopment() ? config["AppSettings:DevelopmentDomain"] : config["AppSettings:ProductionDomain"];
-				//var dominio= GetLocalIpAddress();
+				//var dominio = environment.IsDevelopment() ? config["AppSettings:DevelopmentDomain"] : config["AppSettings:ProductionDomain"];
+				var dominio= GetLocalIpAddress()+":5000";
 
 				if(await Mensaje.EnviarEnlace(entidad,"Restablecer contraseña. ",config,environment,jwt,dominio)){
 					
 					return Ok("Se ha enviado un enlace de restablecimiento de contraseña a su correo electrónico.");
 				}
+
 				return StatusCode(500, "Hubo un problema al enviar el correo de restablecimiento. Inténtelo nuevamente más tarde.");
 			}
 			catch (Exception ex)
-			{
+			{   
 				return BadRequest(ex.Message);
 			}
 		}
@@ -321,9 +320,9 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 		[HttpPut("pass")]
 		public async Task<IActionResult> ActualizarPass([FromForm] string nuevaPass)
 		{
-			Console.WriteLine("Adentro: puttt");
+			
 			try
-			{ //este método si tiene autenticación, al entrar, generar clave aleatorio y enviarla por correo
+			{ 
 
 			     int userId =int.Parse(User.Identity.Name);
 			    Propietario propietario=await contexto.Propietarios.FirstOrDefaultAsync(p=> p.Id ==userId);
@@ -331,7 +330,7 @@ public class PropietarioController : ControllerBase  // acá los controladores h
 				
 				propietario.Pass=password.HashPassword(nuevaPass);
 				await contexto.SaveChangesAsync();
-				return Ok("Contraseña actualizada exitosamente.");
+				return Ok(new JwtSecurityTokenHandler().WriteToken( jwt.GenerarToken(propietario.Id,180)));
 			}
 			catch (Exception ex)
 			{
